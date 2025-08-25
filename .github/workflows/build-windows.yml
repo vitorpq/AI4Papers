@@ -9,10 +9,8 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-
     env:
-      # Instala os browsers do Playwright DENTRO do pacote Python,
-      # permitindo que o PyInstaller embale tudo junto.
+      # Embala os browsers do Playwright dentro do site-packages (bom para PyInstaller onedir)
       PLAYWRIGHT_BROWSERS_PATH: "0"
       PYTHONUTF8: "1"
 
@@ -31,20 +29,15 @@ jobs:
         pip install -r requirements.txt
 
     - name: Install Playwright browsers (Chromium)
-      run: |
-        python -m playwright install chromium
+      run: python -m playwright install chromium
 
-    - name: Verify playwright drivers
+    # (opcional) Verificação compatível com PowerShell (sem heredoc)
+    - name: Verify Playwright install
       run: |
-        python - << "PY"
-        import os, sys, playwright
-        from pathlib import Path
-        print("Playwright version:", playwright.__version__)
-        # Mostra onde os navegadores foram instalados (deverá ser site-packages/playwright/driver/)
-        import importlib.util
-        spec = importlib.util.find_spec("playwright")
-        print("Playwright location:", spec.origin)
-        PY
+        python -c "import playwright, importlib.util; \
+        print('Playwright version:', getattr(playwright, '__version__', 'unknown')); \
+        spec = importlib.util.find_spec('playwright'); \
+        print('Playwright location:', spec.origin)"
 
     - name: Build with PyInstaller (onedir)
       run: |
@@ -56,7 +49,8 @@ jobs:
 
     - name: Create ZIP artifact
       run: |
-        powershell Compress-Archive -Path "dist/PDFDownloader/*" -DestinationPath "PDFDownloader_windows.zip" -Force
+        if (Test-Path "PDFDownloader_windows.zip") { Remove-Item "PDFDownloader_windows.zip" -Force }
+        Compress-Archive -Path "dist/PDFDownloader/*" -DestinationPath "PDFDownloader_windows.zip" -Force
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
@@ -65,7 +59,6 @@ jobs:
         path: PDFDownloader_windows.zip
         if-no-files-found: error
 
-  # (Opcional) Cria Release automaticamente quando você marca uma tag "v*"
   release:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [build-windows]
