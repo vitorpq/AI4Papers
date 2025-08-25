@@ -10,8 +10,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     env:
-      # Embala os browsers do Playwright dentro do site-packages (bom para PyInstaller onedir)
-      PLAYWRIGHT_BROWSERS_PATH: "0"
+      PLAYWRIGHT_BROWSERS_PATH: "0"   # embala Chromium dentro do app
       PYTHONUTF8: "1"
 
     steps:
@@ -31,7 +30,6 @@ jobs:
     - name: Install Playwright browsers (Chromium)
       run: python -m playwright install chromium
 
-    # (opcional) Verificação compatível com PowerShell (sem heredoc)
     - name: Verify Playwright install
       run: |
         python -c "import playwright, importlib.util; \
@@ -40,12 +38,7 @@ jobs:
         print('Playwright location:', spec.origin)"
 
     - name: Build with PyInstaller (onedir)
-      run: |
-        pyinstaller --noconfirm ^
-          --windowed ^
-          --name "PDFDownloader" ^
-          --collect-all playwright ^
-          app.py
+      run: pyinstaller --noconfirm --windowed --name PDFDownloader --collect-all playwright app.py
 
     - name: Create ZIP artifact
       run: |
